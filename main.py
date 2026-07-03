@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 
 LISTA_TAREFAS = []
@@ -16,6 +17,19 @@ def nova_tarefa(id: int, titulo: str, descricao: str):
         "criado_em": datetime.now()
     }
 
+def verifica_tarefa_existente(id: int) -> bool:
+    for tarefa in LISTA_TAREFAS:
+        if tarefa['id'] == id:
+            return True
+    return False
+
+def encontra_tarefa_index(id: int) -> int | None:
+    for i, cur_tarefa in enumerate(LISTA_TAREFAS):
+        if cur_tarefa.id == id:
+            tarefa_id = tarefa_id
+            return tarefa_id
+    return None
+
 @APP.get("/")
 def index():
     return "Olá, DevOps!"
@@ -28,12 +42,12 @@ def listat_tarefas():
     if len(LISTA_TAREFAS) == 0:
         return LISTA_TAREFAS
     
-    return [{"id": tarefa['id'], "titulo": tarefa['titulo']} for tarefa in LISTA_TAREFAS]
+    return LISTA_TAREFAS
 
 @APP.get("/tarefas/{id}")
 def listar_tarefa_especifica(id: int):
     global LISTA_TAREFAS
-    LISTA_TAREFAS.append(nova_tarefa(0, "nova tarefa", "descricao nova tarefa"))
+    # LISTA_TAREFAS.append(nova_tarefa(0, "nova tarefa", "descricao nova tarefa"))
     mensagem_padrao = {"mensagem": "Não existe nenhuma tarefa"}
 
     # Lista tarefas (somente id e titulo)
@@ -45,3 +59,52 @@ def listar_tarefa_especifica(id: int):
         return LISTA_TAREFAS[id]
     else:
         return mensagem_padrao
+
+# Implementar
+@APP.post("/tarefas")
+def criar_tarefa(id: int, titulo: str, descricao: str):
+    global LISTA_TAREFAS
+
+    if verifica_tarefa_existente(id):
+        return {"mensagem": "Tarefa já existe"}
+    
+    nova = nova_tarefa(id, titulo, descricao)
+    LISTA_TAREFAS.append(nova)
+
+    return nova
+
+@APP.put("/tarefas/{id}")
+def atualizar_tarefa(
+        id: int, 
+        titulo: str | None = None, 
+        descricao: str | None = None, 
+        concluido: bool | None = None
+    ):
+    global LISTA_TAREFAS
+    
+    if not verifica_tarefa_existente(id):
+        return {"mensagem": "Tarefa não existe"}
+
+    tarefa_index = encontra_tarefa_index(id)
+    tarefa = LISTA_TAREFAS[tarefa_index]
+    
+    if titulo:
+        tarefa['titulo'] = titulo
+    if descricao:
+        tarefa['descricao'] = descricao
+    if concluido:
+        tarefa['concluido'] = concluido
+
+    return tarefa
+
+@APP.delete("/tarefas/{id}")
+def excluir_tarefa(id: int):
+    global LISTA_TAREFAS
+    
+    if not verifica_tarefa_existente(id):
+        return {"mensagem": "Tarefa não existe"}
+    
+    tarefa_index = encontra_tarefa_index(id)
+    del LISTA_TAREFAS[tarefa_id]
+
+    return {"mensagem": "Tarefa excluída"}
