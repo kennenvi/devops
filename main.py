@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+import requests
 
 
 LISTA_TAREFAS = []
@@ -25,8 +26,8 @@ def verifica_tarefa_existente(id: int) -> bool:
 
 def encontra_tarefa_index(id: int) -> int | None:
     for i, cur_tarefa in enumerate(LISTA_TAREFAS):
-        if cur_tarefa.id == id:
-            tarefa_id = tarefa_id
+        if cur_tarefa['id'] == id:
+            tarefa_id = cur_tarefa['id']
             return tarefa_id
     return None
 
@@ -94,6 +95,9 @@ def atualizar_tarefa(
         tarefa['descricao'] = descricao
     if concluido:
         tarefa['concluido'] = concluido
+    
+    if concluido == True:
+        requests.post(f'http://localhost:8001/notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}')
 
     return tarefa
 
