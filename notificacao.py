@@ -13,11 +13,12 @@ def index():
     global NOTIFICACOES
     return NOTIFICACOES
 
-@APP_NOTIFICACAO.post('/notificar/')
+@APP_NOTIFICACAO.post('/notificar')
 def notificar(titulo: str, data_finalizacao: datetime):
     global NOTIFICACOES
 
     mensagem = f'titulo {titulo}, data de finalização: {data_finalizacao}'
+    print(mensagem)
     NOTIFICACOES.append(mensagem)
     
     return {'mensagem': 'Mensagem recebida'}
