@@ -32,8 +32,8 @@ jobs:
       - name: "Autenticação"
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKERHUB_TOKEN }}
-          passwoed: ${{ secrets.DOCKERBUG_TOKEN }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: "Configurando QEMU"
         uses: docker/setup-qemu-action@v3
       - name: "Configurando buildx"
