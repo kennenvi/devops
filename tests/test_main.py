@@ -81,3 +81,9 @@ def test_busca_tarefa():
     requisicao = CLIENT.get('tarefas/5')
     assert requisicao.status_code == 200
     assert requisicao.json() == {"mensagem": "Tarefa não existe"}
+
+def test_health():
+    requisicao = CLIENT.get(f'/health')
+    
+    assert requisicao.status_code == 200
+    assert requisicao.json() == {"status": "OK"}

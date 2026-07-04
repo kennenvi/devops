@@ -112,3 +112,7 @@ def excluir_tarefa(id: int):
     del LISTA_TAREFAS[tarefa_index]
 
     return {"mensagem": "Tarefa excluída"}
+
+@APP.get('/health')
+def health():
+    return {"status": "OK"}
