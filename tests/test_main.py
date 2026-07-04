@@ -6,9 +6,15 @@ from app import APP
 CLIENT = TestClient(APP)
 
 
-def criar_tarefa_mock():
-    args = 'id=0&titulo=titulo_teste&descricao=descricao_teste'
+def criar_tarefa_mock(id: int = 0, titulo: str = 'titulo_teste', descricao: str = 'descricao_teste') -> None:
+    args = f'id={id}&titulo={titulo}&descricao={descricao}'
     CLIENT.post(f'/tarefas?{args}')
+
+def setup_tarefas(quantidade_tarefas=5, qtd_concluida=3):
+    for id_tarefa in range(quantidade_tarefas):
+        criar_tarefa_mock(id=id_tarefa)
+    for id_tarefa in range(qtd_concluida):
+        CLIENT.put(f'tarefas/{id_tarefa}?concluido=true')
 
 def test_index():
     requisicao = CLIENT.get('/')
@@ -23,7 +29,7 @@ def test_index():
 # Verificar se o retorno, quando tarefa é criada, é igual a {"mensagem": "OK"}
 # ou conforme definido na sua API
 # Verificar se o retorno, quando a tarefa já existe, é igual a
-# {"mensagem" : "TAREFA JÁ EXISTE"} ou conforme definido na sua API
+# {"mensagem" : "TAREFA JÁ EXISTE"} ou conformkkke definido na sua API
 def test_criacao_tarefa():
     args = 'id=0&titulo=teste&descricao=teste'
 
@@ -87,3 +93,17 @@ def test_health():
     
     assert requisicao.status_code == 200
     assert requisicao.json() == {"status": "OK"}
+
+def test_metrics():
+    setup_tarefas(quantidade_tarefas=5, qtd_concluida=3)
+
+    requisicao = CLIENT.get('metrics')
+
+    metrica_esperada = {
+        'quantidade_tarefas': 5,
+        'tarefas_finalizadas': 3,
+        'tarefas_pendentes': 2
+    }
+
+    assert requisicao.status_code == 200
+    assert requisicao.json() == metrica_esperada

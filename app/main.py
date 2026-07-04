@@ -116,3 +116,42 @@ def excluir_tarefa(id: int):
 @APP.get('/health')
 def health():
     return {"status": "OK"}
+
+@APP.get('/metrics')
+def metrics():
+    total_tarefas = len(LISTA_TAREFAS)
+    tarefas_finalizadas = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == True])
+    tarefas_pendentes = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == False])
+
+    metricas = {
+        'quantidade_tarefas': total_tarefas,
+        'tarefas_finalizadas': tarefas_finalizadas,
+        'tarefas_pendentes': tarefas_pendentes
+    }
+
+    return metricas
+
+
+# Criar uma branch nova (git checkout -b <NOME DA BRANCH>)
+# -------- OBRIGATÓRIA ---------
+# 1. Criar um endpoint /health (GET)
+#    1.1 Retornar status_code 200
+#    1.2 Retonar {"status": "OK"}
+#    1.3 Criar um teste unitário para validar se ambos os pontos 1.1 e 1.2 estão corretos
+#    1.4 Commitar alterações e enviar ao repositório (git push -u origin <NOME DA BRANCH>)
+#    1.5 Criar pull request
+# ------------------------------
+# --------- OPCIONAL! ----------
+# 2. Criar um endpoint /metricas (GET) (ITEM OPCIONAL!)
+#    2.1 Retornar status_code 200
+#    2.2 Retonar
+#        - Quantidade de tarefas que existem
+#        - Quantidade de tarefas finalizadas
+#        - Quantidade de tarefas pendentes
+#        Exemplo:
+#            {"quantidade_tarefas": 3, "tarefas_finalizadas": 2, "tarefas_pendentes": 1}
+#    2.3 Criar um teste unitário para validar se ambos os pontos 2.1 e 2.2 estão corretos
+#    2.4 Commitar alterações e enviar ao repositório (git push -u origin <NOME DA BRANCH>)
+#    2.5 Criar pull request
+# ------------------------------
+ 
