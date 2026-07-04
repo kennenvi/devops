@@ -111,6 +111,6 @@ def excluir_tarefa(id: int):
         return {"mensagem": "Tarefa não existe"}
     
     tarefa_index = encontra_tarefa_index(id)
-    del LISTA_TAREFAS[tarefa_id]
+    del LISTA_TAREFAS[tarefa_index]
 
     return {"mensagem": "Tarefa excluída"}
