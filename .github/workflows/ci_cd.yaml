@@ -18,7 +18,7 @@ jobs:
       - name: "Testes unitários"
         run: 'pytest'
       - name: "Cobertura de código"
-        run: 'pytest --cov=app'
+        run: 'pytest --cov --cov-fail-under=80'
       - name: "Análise estática"
         run: 'bandit -r app/'
       - name: "Linting"
