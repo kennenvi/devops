@@ -2,7 +2,7 @@ name: 'Pipeline 04/07/26'
 
 on:
   # Habilita botão na interface Web para acionar manualmente a pipeline
-  push:
+  pull_request:
     branches:
       - main
   workflow_dispatch:
@@ -23,3 +23,23 @@ jobs:
         run: 'bandit -r app/'
       - name: "Linting"
         run: 'pylint app/ || true'
+  entrega:
+    needs: integracao
+    name: "Entrega"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Autenticação"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_TOKEN }}
+          passwoed: ${{ secrets.DOCKERBUG_TOKEN }}
+      - name: "Configurando QEMU"
+        uses: docker/setup-qemu-action@v3
+      - name: "Configurando buildx"
+        uses: docker/setup-buildx-action@v3
+      - name: "Build e push"
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/curso-devops:latest
