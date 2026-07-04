@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from pydantic import BaseModel
 import requests
 
@@ -62,17 +63,17 @@ def listar_tarefa_especifica(id: int):
         return mensagem_padrao
 
 # Implementar
-@APP.post("/tarefas")
+@APP.post("/tarefas", status_code=201)
 def criar_tarefa(id: int, titulo: str, descricao: str):
     global LISTA_TAREFAS
 
     if verifica_tarefa_existente(id):
-        return {"mensagem": "Tarefa já existe"}
+        raise HTTPException(status_code=409, detail="Tarefa já existe")
     
     nova = nova_tarefa(id, titulo, descricao)
     LISTA_TAREFAS.append(nova)
 
-    return nova
+    return {'mensagem': 'tarefa criada'}
 
 @APP.put("/tarefas/{id}")
 def atualizar_tarefa(
