@@ -50,5 +50,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 'Aplicação do manifesto'
-        run: kubectl delete -f deployment.yaml && kubectl apply -f deployment.yaml
+        run: kubectl delete -f /home/devops/aula/devops/deployment.yaml && kubectl apply -f /home/devops/aula/devops/deployment.yaml
 
