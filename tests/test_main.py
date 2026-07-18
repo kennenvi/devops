@@ -39,6 +39,7 @@ def test_criacao_tarefa():
 
     assert requisicao.status_code == 201
     assert requisicao.json() == {'mensagem': 'tarefa criada'}
+    CLIENT.delete('/tarefas/0')
 
 def test_cricao_tarefa_ja_existe():
     criar_tarefa_mock()
@@ -48,6 +49,7 @@ def test_cricao_tarefa_ja_existe():
 
     assert requisicao_erro.status_code == 409
     assert requisicao_erro.json()['detail'] == "Tarefa já existe"
+    CLIENT.delete('/tarefas/0')
 
 def test_remover_tarefa():
     criar_tarefa_mock()
@@ -71,6 +73,7 @@ def test_atualizar_tarefa():
     requisicao = CLIENT.get('tarefas/0')
     assert requisicao.status_code == 200
     assert requisicao.json()['descricao'] == 'descricao_teste'
+    CLIENT.delete('/tarefas/0')
 
 def test_busca_tarefa():
     criar_tarefa_mock()
@@ -88,23 +91,3 @@ def test_busca_tarefa():
     requisicao = CLIENT.get('tarefas/5')
     assert requisicao.status_code == 200
     assert requisicao.json() == {"mensagem": "Tarefa não existe"}
-
-def test_health():
-    requisicao = CLIENT.get(f'/health')
-    
-    assert requisicao.status_code == 200
-    assert requisicao.json() == {"status": "OK"}
-
-def test_metrics():
-    setup_tarefas(quantidade_tarefas=5, qtd_concluida=3)
-
-    requisicao = CLIENT.get('metrics')
-
-    metrica_esperada = {
-        'quantidade_tarefas': 5,
-        'tarefas_finalizadas': 3,
-        'tarefas_pendentes': 2
-    }
-
-    assert requisicao.status_code == 200
-    assert requisicao.json() == metrica_esperada

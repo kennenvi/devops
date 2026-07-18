@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import os
 
@@ -30,6 +30,23 @@ file_handler.setFormatter(fmt)
 LOGGER.addHandler(stream_handler)
 LOGGER.addHandler(file_handler)
 
+#   - Quantidade total de tarefas
+#   - Quantidade de tarefas pendentes
+#   - Quantidade de tarefas concluídas
+#   - Quantidade de tarefas atualizadas
+#   - Quantidade de tarefas removidas
+#   - Tempo médio para conclusão de tarefa
+
+METRICAS = {
+    'qtde_tarefas': 0,
+    'qtde_tarefas_pendentes': 0,
+    'qtde_tarefas_concluidas': 0,
+    'qtde_tarefas_atualizadas': 0,
+    'qtde_tarefas_removidas': 0,
+    'tempo_medio_conclusao_tafefa': 0,
+}
+
+
 def nova_tarefa(id: int, titulo: str, descricao: str):
     """Função auxiliar para criar uma tarefa usando dicionário (`dict`)"""
     tarefa = {
@@ -39,7 +56,7 @@ def nova_tarefa(id: int, titulo: str, descricao: str):
         "concluido": False,
         "criado_em": datetime.now()
     }
-    LOGGER.debug(f'Tarefa criada: {tarefa}')
+    LOGGER.debug(f'Tarefa criada: {str(tarefa)}')
     return tarefa
 
 def verifica_tarefa_existente(id: int) -> bool:
@@ -51,8 +68,7 @@ def verifica_tarefa_existente(id: int) -> bool:
 def encontra_tarefa_index(id: int) -> int | None:
     for i, cur_tarefa in enumerate(LISTA_TAREFAS):
         if cur_tarefa['id'] == id:
-            tarefa_id = cur_tarefa['id']
-            return tarefa_id
+            return i
     return None
 
 @APP.get("/")
@@ -69,7 +85,13 @@ def listat_tarefas():
     if len(LISTA_TAREFAS) == 0:
         return LISTA_TAREFAS
     
-    return LISTA_TAREFAS
+    tarefas = []
+
+    for tarefa in LISTA_TAREFAS:
+        info = {"id": tarefa['id'], "titulo": tarefa['titulo']}
+        tarefas.append(info)
+    
+    return tarefas
 
 @APP.get("/tarefas/{id}")
 def listar_tarefa_especifica(id: int):
@@ -82,6 +104,7 @@ def listar_tarefa_especifica(id: int):
 
     # ID da tarefa é o índice da lista
     if id >= 0 and id < len(LISTA_TAREFAS):
+        LOGGER.info(f"Acesso a rota listar_tarefa_especifica /tarefa/{id}")
         return LISTA_TAREFAS[id]
     else:
         return {'mensagem': 'Tarefa não existe'}
@@ -89,8 +112,7 @@ def listar_tarefa_especifica(id: int):
 # Implementar
 @APP.post("/tarefas", status_code=201)
 def criar_tarefa(id: int, titulo: str, descricao: str):
-    LOGGER.info("Acesso a rota criar_tarefa")
-    global LISTA_TAREFAS
+    global LISTA_TAREFAS, METRICAS
 
     if verifica_tarefa_existente(id):
         LOGGER.error(f"Tarefa id={id}, já existe")
@@ -98,6 +120,9 @@ def criar_tarefa(id: int, titulo: str, descricao: str):
     
     nova = nova_tarefa(id, titulo, descricao)
     LISTA_TAREFAS.append(nova)
+    LOGGER.info(f"Acesso a rota criar_tarefa com tarefa id={id}")
+
+    METRICAS['qtde_tarefas'] += 1
 
     return {'mensagem': 'tarefa criada'}
 
@@ -108,14 +133,14 @@ def atualizar_tarefa(
         descricao: str | None = None, 
         concluido: bool | None = None
     ):
-    LOGGER.info("Acesso a rota atualizar_tarefa")
-    global LISTA_TAREFAS
+    global LISTA_TAREFAS, METRICAS
     
     if not verifica_tarefa_existente(id):
         LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
 
     tarefa_index = encontra_tarefa_index(id)
+    print(tarefa_index)
     tarefa = LISTA_TAREFAS[tarefa_index]
     
     if titulo:
@@ -126,23 +151,40 @@ def atualizar_tarefa(
         tarefa['concluido'] = concluido
     
     if concluido == True:
-        pass
+        METRICAS['qtde_tarefas_concluidas'] += 1
+        LISTA_TAREFAS[tarefa_index]['concluido_em'] = datetime.now()
         # requests.post(f'http://svc-notificacao.svc./notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}',
         #               timeout=30)
+    
+    LISTA_TAREFAS[tarefa_index]['concluido'] = concluido
+
+    LOGGER.debug(f"Tarefa atualizada = {LISTA_TAREFAS[tarefa_index]}")
+    LOGGER.info(f"Rota PUT '/tarefas/{id}' acessada. Tarefa id={id} atualizada.")
+
+    METRICAS['qtde_tarefas_atualizadas'] += 1
+    METRICAS['qtde_tarefas_pendentes'] = METRICAS['qtde_tarefas'] - METRICAS['qtde_tarefas_concluidas']
 
     return {'mensagem': 'Tarefa atualizada'}
 
 @APP.delete("/tarefas/{id}")
 def excluir_tarefa(id: int):
     LOGGER.info("Acesso a rota excluir_tarefa")
-    global LISTA_TAREFAS
+    global LISTA_TAREFAS, METRICAS
     
     if not verifica_tarefa_existente(id):
         LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
     
     tarefa_index = encontra_tarefa_index(id)
+    LOGGER.info(f'id={id}')
+    LOGGER.info(f'tarefa={tarefa_index}')
+    LOGGER.info(f'lista_tarefas={LISTA_TAREFAS}')
     del LISTA_TAREFAS[tarefa_index]
+
+    LOGGER.info(f"Rota DELETE '/tarefas/{id}' acessada. Tarefa id={id} removida.")
+
+    METRICAS['qtde_tarefas_removidas'] += 1
+    METRICAS['qtde_tarefas'] -= 1
 
     return {"mensagem": "Tarefa excluída"}
 
@@ -151,19 +193,20 @@ def health():
     LOGGER.info("Acesso a rota health")
     return {"status": "OK"}
 
-@APP.get('/metrics')
-def metrics():
-    LOGGER.info("Acesso a rota metrics")
-    total_tarefas = len(LISTA_TAREFAS)
-    tarefas_finalizadas = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == True])
-    tarefas_pendentes = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == False])
+@APP.get('/metricas')
+def metricas():
+    
+    tempo_medio_total = timedelta()
+    
+    for tarefa in LISTA_TAREFAS:
+        if tarefa['concluido']:
+            tempo_medio = tarefa['concluido_em'] - tarefa['criado_em']
+            tempo_medio_total += tempo_medio
 
-    metricas = {
-        'quantidade_tarefas': total_tarefas,
-        'tarefas_finalizadas': tarefas_finalizadas,
-        'tarefas_pendentes': tarefas_pendentes
-    }
+    if METRICAS['qtde_tarefas_concluidas'] > 0:
+        METRICAS['tempo_medio_conclusao_tarefa'] = tempo_medio_total / METRICAS['qtde_tarefas_concluidas']
+    
+    LOGGER.debug(METRICAS)
+    LOGGER.info("Rota '/metricas' acessada.")
 
-    return metricas
- 
-
+    return METRICAS
