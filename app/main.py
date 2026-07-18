@@ -1,4 +1,6 @@
 from datetime import datetime
+import logging
+import os
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -6,18 +8,39 @@ from pydantic import BaseModel
 import requests
 
 
+level = os.environ.get("LOG_LEVEL", logging.INFO)
+
+if level == "DEBUG":
+    level = logging.DEBUG
+else:
+    level = logging.INFO
+
 LISTA_TAREFAS = []
 APP = FastAPI()
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(level)
+
+stream_handler  = logging.StreamHandler()
+file_handler    = logging.FileHandler("api.log", encoding='utf-8')
+fmt             = logging.Formatter(fmt="%(name)s | %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s | %(message)s)")
+
+stream_handler.setFormatter(fmt)
+file_handler.setFormatter(fmt)
+
+LOGGER.addHandler(stream_handler)
+LOGGER.addHandler(file_handler)
 
 def nova_tarefa(id: int, titulo: str, descricao: str):
     """Função auxiliar para criar uma tarefa usando dicionário (`dict`)"""
-    return {
+    tarefa = {
         "id": id,
         "titulo": titulo,
         "descricao": descricao,
         "concluido": False,
         "criado_em": datetime.now()
     }
+    LOGGER.debug(f'Tarefa criada: {tarefa}')
+    return tarefa
 
 def verifica_tarefa_existente(id: int) -> bool:
     for tarefa in LISTA_TAREFAS:
@@ -34,10 +57,12 @@ def encontra_tarefa_index(id: int) -> int | None:
 
 @APP.get("/")
 def index():
+    LOGGER.info("Acesso o index")
     return "Olá, DevOps!"
 
 @APP.get("/tarefas")
 def listat_tarefas():
+    LOGGER.info("Acesso a rota listar_tarefas")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -48,6 +73,7 @@ def listat_tarefas():
 
 @APP.get("/tarefas/{id}")
 def listar_tarefa_especifica(id: int):
+    LOGGER.info("Acesso a rota listar_tarefa_especifica")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -63,9 +89,11 @@ def listar_tarefa_especifica(id: int):
 # Implementar
 @APP.post("/tarefas", status_code=201)
 def criar_tarefa(id: int, titulo: str, descricao: str):
+    LOGGER.info("Acesso a rota criar_tarefa")
     global LISTA_TAREFAS
 
     if verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, já existe")
         raise HTTPException(status_code=409, detail="Tarefa já existe")
     
     nova = nova_tarefa(id, titulo, descricao)
@@ -80,9 +108,11 @@ def atualizar_tarefa(
         descricao: str | None = None, 
         concluido: bool | None = None
     ):
+    LOGGER.info("Acesso a rota atualizar_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
 
     tarefa_index = encontra_tarefa_index(id)
@@ -96,16 +126,18 @@ def atualizar_tarefa(
         tarefa['concluido'] = concluido
     
     if concluido == True:
-        requests.post(f'http://notificacoes:8000/notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}',
+        requests.post(f'http://svc-notificacao.svc./notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}',
                       timeout=30)
 
     return {'mensagem': 'Tarefa atualizada'}
 
 @APP.delete("/tarefas/{id}")
 def excluir_tarefa(id: int):
+    LOGGER.info("Acesso a rota excluir_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
     
     tarefa_index = encontra_tarefa_index(id)
@@ -115,10 +147,12 @@ def excluir_tarefa(id: int):
 
 @APP.get('/health')
 def health():
+    LOGGER.info("Acesso a rota health")
     return {"status": "OK"}
 
 @APP.get('/metrics')
 def metrics():
+    LOGGER.info("Acesso a rota metrics")
     total_tarefas = len(LISTA_TAREFAS)
     tarefas_finalizadas = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == True])
     tarefas_pendentes = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == False])
@@ -130,28 +164,5 @@ def metrics():
     }
 
     return metricas
-
-
-# Criar uma branch nova (git checkout -b <NOME DA BRANCH>)
-# -------- OBRIGATÓRIA ---------
-# 1. Criar um endpoint /health (GET)
-#    1.1 Retornar status_code 200
-#    1.2 Retonar {"status": "OK"}
-#    1.3 Criar um teste unitário para validar se ambos os pontos 1.1 e 1.2 estão corretos
-#    1.4 Commitar alterações e enviar ao repositório (git push -u origin <NOME DA BRANCH>)
-#    1.5 Criar pull request
-# ------------------------------
-# --------- OPCIONAL! ----------
-# 2. Criar um endpoint /metricas (GET) (ITEM OPCIONAL!)
-#    2.1 Retornar status_code 200
-#    2.2 Retonar
-#        - Quantidade de tarefas que existem
-#        - Quantidade de tarefas finalizadas
-#        - Quantidade de tarefas pendentes
-#        Exemplo:
-#            {"quantidade_tarefas": 3, "tarefas_finalizadas": 2, "tarefas_pendentes": 1}
-#    2.3 Criar um teste unitário para validar se ambos os pontos 2.1 e 2.2 estão corretos
-#    2.4 Commitar alterações e enviar ao repositório (git push -u origin <NOME DA BRANCH>)
-#    2.5 Criar pull request
-# ------------------------------
  
+
