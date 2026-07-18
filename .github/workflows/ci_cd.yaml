@@ -23,8 +23,18 @@ jobs:
         run: 'bandit -r app/'
       - name: "Linting"
         run: 'pylint app/ || true'
-  entrega:
+  fossa:
     needs: integracao
+    name: 'Análise de Dependências e Conformidades'
+    runs-on: self-hosted
+    steps:
+      - uses: actios/checkout@v4
+      - name: 'FOSSA'
+        uses: fossas/fossa-actions@main
+        with:
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+  entrega:
+    needs: [integracao, fossa]
     name: "Entrega"
     runs-on: ubuntu-latest
     steps:
