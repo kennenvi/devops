@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -8,6 +9,8 @@ import requests
 
 LISTA_TAREFAS = []
 APP = FastAPI()
+logging.basicConfig(level=logging.INFO)
+LOGGGER = logging.getLogger(__name__)
 
 def nova_tarefa(id: int, titulo: str, descricao: str):
     """Função auxiliar para criar uma tarefa usando dicionário (`dict`)"""
@@ -34,10 +37,12 @@ def encontra_tarefa_index(id: int) -> int | None:
 
 @APP.get("/")
 def index():
+    LOGGGER.info("Acesso o index")
     return "Olá, DevOps!"
 
 @APP.get("/tarefas")
 def listat_tarefas():
+    LOGGGER.info("Acesso a rota listar_tarefas")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -48,6 +53,7 @@ def listat_tarefas():
 
 @APP.get("/tarefas/{id}")
 def listar_tarefa_especifica(id: int):
+    LOGGGER.info("Acesso a rota listar_tarefa_especifica")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -63,6 +69,7 @@ def listar_tarefa_especifica(id: int):
 # Implementar
 @APP.post("/tarefas", status_code=201)
 def criar_tarefa(id: int, titulo: str, descricao: str):
+    LOGGGER.info("Acesso a rota criar_tarefa")
     global LISTA_TAREFAS
 
     if verifica_tarefa_existente(id):
@@ -70,6 +77,7 @@ def criar_tarefa(id: int, titulo: str, descricao: str):
     
     nova = nova_tarefa(id, titulo, descricao)
     LISTA_TAREFAS.append(nova)
+    LOGGGER.debug(f'Nova tarefa: {nova}')
 
     return {'mensagem': 'tarefa criada'}
 
@@ -80,6 +88,7 @@ def atualizar_tarefa(
         descricao: str | None = None, 
         concluido: bool | None = None
     ):
+    LOGGGER.info("Acesso a rota atualizar_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
@@ -103,6 +112,7 @@ def atualizar_tarefa(
 
 @APP.delete("/tarefas/{id}")
 def excluir_tarefa(id: int):
+    LOGGGER.info("Acesso a rota excluir_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
@@ -115,4 +125,5 @@ def excluir_tarefa(id: int):
 
 @APP.get('/health')
 def health():
+    LOGGGER.info("Acesso a rota health")
     return {"status": "OK"}
