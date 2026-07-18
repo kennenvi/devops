@@ -28,7 +28,7 @@ jobs:
     name: 'Análise de Dependências e Conformidades'
     runs-on: self-hosted
     steps:
-      - uses: actios/checkout@v4
+      - uses: actions/checkout@v4
       - name: 'FOSSA'
         uses: fossas/fossa-action@main
         with:
