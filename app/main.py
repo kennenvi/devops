@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -7,20 +8,39 @@ from pydantic import BaseModel
 import requests
 
 
+level = os.environ.get("LOG_LEVEL", logging.INFO)
+
+if level == "DEBUG":
+    level = logging.DEBUG
+else:
+    level = logging.INFO
+
 LISTA_TAREFAS = []
 APP = FastAPI()
-logging.basicConfig(level=logging.INFO)
-LOGGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(level)
+
+stream_handler  = logging.StreamHandler()
+file_handler    = logging.FileHandler("api.log", encoding='utf-8')
+fmt             = logging.Formatter(fmt="%(name)s | %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s | %(message)s)")
+
+stream_handler.setFormatter(fmt)
+file_handler.setFormatter(fmt)
+
+LOGGER.addHandler(stream_handler)
+LOGGER.addHandler(file_handler)
 
 def nova_tarefa(id: int, titulo: str, descricao: str):
     """Função auxiliar para criar uma tarefa usando dicionário (`dict`)"""
-    return {
+    tarefa = {
         "id": id,
         "titulo": titulo,
         "descricao": descricao,
         "concluido": False,
         "criado_em": datetime.now()
     }
+    LOGGER.debug(f'Tarefa criada: {tarefa}')
+    return tarefa
 
 def verifica_tarefa_existente(id: int) -> bool:
     for tarefa in LISTA_TAREFAS:
@@ -37,12 +57,12 @@ def encontra_tarefa_index(id: int) -> int | None:
 
 @APP.get("/")
 def index():
-    LOGGGER.info("Acesso o index")
+    LOGGER.info("Acesso o index")
     return "Olá, DevOps!"
 
 @APP.get("/tarefas")
 def listat_tarefas():
-    LOGGGER.info("Acesso a rota listar_tarefas")
+    LOGGER.info("Acesso a rota listar_tarefas")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -53,7 +73,7 @@ def listat_tarefas():
 
 @APP.get("/tarefas/{id}")
 def listar_tarefa_especifica(id: int):
-    LOGGGER.info("Acesso a rota listar_tarefa_especifica")
+    LOGGER.info("Acesso a rota listar_tarefa_especifica")
     global LISTA_TAREFAS
 
     # Lista tarefas (somente id e titulo)
@@ -69,15 +89,15 @@ def listar_tarefa_especifica(id: int):
 # Implementar
 @APP.post("/tarefas", status_code=201)
 def criar_tarefa(id: int, titulo: str, descricao: str):
-    LOGGGER.info("Acesso a rota criar_tarefa")
+    LOGGER.info("Acesso a rota criar_tarefa")
     global LISTA_TAREFAS
 
     if verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, já existe")
         raise HTTPException(status_code=409, detail="Tarefa já existe")
     
     nova = nova_tarefa(id, titulo, descricao)
     LISTA_TAREFAS.append(nova)
-    LOGGGER.debug(f'Nova tarefa: {nova}')
 
     return {'mensagem': 'tarefa criada'}
 
@@ -88,10 +108,11 @@ def atualizar_tarefa(
         descricao: str | None = None, 
         concluido: bool | None = None
     ):
-    LOGGGER.info("Acesso a rota atualizar_tarefa")
+    LOGGER.info("Acesso a rota atualizar_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
 
     tarefa_index = encontra_tarefa_index(id)
@@ -112,10 +133,11 @@ def atualizar_tarefa(
 
 @APP.delete("/tarefas/{id}")
 def excluir_tarefa(id: int):
-    LOGGGER.info("Acesso a rota excluir_tarefa")
+    LOGGER.info("Acesso a rota excluir_tarefa")
     global LISTA_TAREFAS
     
     if not verifica_tarefa_existente(id):
+        LOGGER.error(f"Tarefa id={id}, não existe")
         return {"mensagem": "Tarefa não existe"}
     
     tarefa_index = encontra_tarefa_index(id)
@@ -125,5 +147,5 @@ def excluir_tarefa(id: int):
 
 @APP.get('/health')
 def health():
-    LOGGGER.info("Acesso a rota health")
+    LOGGER.info("Acesso a rota health")
     return {"status": "OK"}
