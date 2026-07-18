@@ -68,8 +68,7 @@ def verifica_tarefa_existente(id: int) -> bool:
 def encontra_tarefa_index(id: int) -> int | None:
     for i, cur_tarefa in enumerate(LISTA_TAREFAS):
         if cur_tarefa['id'] == id:
-            tarefa_id = cur_tarefa['id']
-            return tarefa_id
+            return i
     return None
 
 @APP.get("/")
@@ -141,6 +140,7 @@ def atualizar_tarefa(
         return {"mensagem": "Tarefa não existe"}
 
     tarefa_index = encontra_tarefa_index(id)
+    print(tarefa_index)
     tarefa = LISTA_TAREFAS[tarefa_index]
     
     if titulo:
@@ -176,6 +176,9 @@ def excluir_tarefa(id: int):
         return {"mensagem": "Tarefa não existe"}
     
     tarefa_index = encontra_tarefa_index(id)
+    LOGGER.info(f'id={id}')
+    LOGGER.info(f'tarefa={tarefa_index}')
+    LOGGER.info(f'lista_tarefas={LISTA_TAREFAS}')
     del LISTA_TAREFAS[tarefa_index]
 
     LOGGER.info(f"Rota DELETE '/tarefas/{id}' acessada. Tarefa id={id} removida.")
