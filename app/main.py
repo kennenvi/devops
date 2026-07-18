@@ -126,8 +126,9 @@ def atualizar_tarefa(
         tarefa['concluido'] = concluido
     
     if concluido == True:
-        requests.post(f'http://svc-notificacao.svc./notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}',
-                      timeout=30)
+        pass
+        # requests.post(f'http://svc-notificacao.svc./notificar?titulo={tarefa["titulo"]}&data_finalizacao={datetime.now()}',
+        #               timeout=30)
 
     return {'mensagem': 'Tarefa atualizada'}
 
