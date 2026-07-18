@@ -149,3 +149,20 @@ def excluir_tarefa(id: int):
 def health():
     LOGGER.info("Acesso a rota health")
     return {"status": "OK"}
+
+@APP.get('/metrics')
+def metrics():
+    LOGGER.info("Acesso a rota metrics")
+    total_tarefas = len(LISTA_TAREFAS)
+    tarefas_finalizadas = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == True])
+    tarefas_pendentes = len([tarefa for tarefa in LISTA_TAREFAS if tarefa['concluido'] == False])
+
+    metricas = {
+        'quantidade_tarefas': total_tarefas,
+        'tarefas_finalizadas': tarefas_finalizadas,
+        'tarefas_pendentes': tarefas_pendentes
+    }
+
+    return metricas
+ 
+
